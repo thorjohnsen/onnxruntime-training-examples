@@ -72,21 +72,16 @@ def bert_model_description(args):
     loss_desc = IODescription('loss', [], torch.float32)
     return ModelDescription([input_ids_desc, segment_ids_desc, input_mask_desc, masked_lm_labels_desc, next_sentence_labels_desc], [loss_desc])
 
-# for opset 10
-from ort_supplement.onnx_transforms.model_transform import add_name, fix_transpose, add_expand_shape, process_concat, process_dropout, handle_expand_input_is_not_constant_case, fix_dim, fix_expand
-
+from ort_supplement.onnx_transforms.model_transform import add_name, fix_transpose, add_expand_shape, process_concat, process_dropout
 from ort_supplement.onnx_transforms.layer_norm_transform import layer_norm_transform
 
 def postprocess_model(model):
     add_name(model)
-    # for opset 10 ..
-    handle_expand_input_is_not_constant_case(model)
-    fix_expand(model)
-    fix_dim(model)
-    process_dropout(model)
-    # --- 
+    # not in TJ branch process_concat(model)
+    # not in TJ branch fix_transpose(model)
     add_expand_shape(model)
     layer_norm_transform(model)
+
 
 def create_ort_trainer(args, device, model):
     # set GPU memory limitation
@@ -118,7 +113,7 @@ def create_ort_trainer(args, device, model):
         use_mixed_precision = True if args.fp16 else False,
         allreduce_post_accumulation = True if args.allreduce_post_accumulation else False,
         partition_optimizer = True if args.partition_optimizer else False,
-        _opset_version = 10)
+        _opset_version = 12)
 
     if args.fp16:
         setattr(args, 'ort_loss_scale', LossScaler(model.loss_scale_input_name, True, up_scale_window=2000))

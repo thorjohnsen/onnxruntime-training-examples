@@ -3,6 +3,9 @@
 
 FROM nvcr.io/nvidia/pytorch:20.03-py3
 
+# warning: override python install with nightly!
+RUN conda install pytorch torchvision cudatoolkit=10.1 -c pytorch-nightly
+
 # Environment variables
 ENV STAGE_DIR=/root/gpu/install \
     CUDNN_DIR=/usr/local/cudnn \
