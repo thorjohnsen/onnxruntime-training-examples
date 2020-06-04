@@ -1,10 +1,8 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-FROM nvcr.io/nvidia/pytorch:20.03-py3
-
-# warning: override python install with nightly!
-RUN conda install pytorch torchvision cudatoolkit=10.1 -c pytorch-nightly
+# FROM nvcr.io/nvidia/pytorch:20.03-py3
+FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
 
 # Environment variables
 ENV STAGE_DIR=/root/gpu/install \
@@ -32,6 +30,7 @@ RUN apt-get -y update && \
       cmake \
       g++ \
       gcc \
+      libnuma-dev \
     # ifconfig
       net-tools && \
     apt-get autoremove
@@ -87,6 +86,21 @@ RUN apt-get -y update && \
 
 RUN apt-get update && apt-get install -y pbzip2 pv bzip2 cabextract
 
+# install miniconda
+ENV PATH /opt/miniconda/bin:${PATH}
+ENV LD_LIBRARY_PATH /opt/miniconda/lib:$LD_LIBRARY_PATH
+LABEL miniconda_version="4.7.12"
+LABEL numpy_version="1.18.2"
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.7.12-Linux-x86_64.sh \
+        -O ~/miniconda.sh --no-check-certificate &&\
+    /bin/bash ~/miniconda.sh -b -p /opt/miniconda &&\
+    rm ~/miniconda.sh &&\
+    /opt/miniconda/bin/conda clean -ya &&\
+    pip install numpy==1.18.2
+
+# warning: to get opset12 install pytorch nightly!
+RUN /opt/miniconda/bin/conda install pytorch torchvision cudatoolkit=10.1 -c pytorch-nightly
+
 WORKDIR /workspace
 
 # additional dependencies for scripts
@@ -95,14 +109,10 @@ RUN pip install --no-cache-dir \
     h5py html2text nltk progressbar \
     mpi4py git+https://github.com/NVIDIA/dllogger
 
-# add pytorch patch for opset 10
-COPY pyt_patch /tmp/pyt_patch
-RUN cp /tmp/pyt_patch/symbolic_opset10.py /opt/conda/lib/python3.6/site-packages/torch/onnx/
-
 # Build onnxruntime training wheel from orttraining_rc1 branch
 RUN git clone https://github.com/microsoft/onnxruntime.git &&\
     cd onnxruntime &&\
-    git checkout orttraining_rc1_opset12 &&\
+    git checkout examples-repo/demo-opset12 &&\
     python tools/ci_build/build.py \
         --config RelWithDebInfo \
         --use_cuda \

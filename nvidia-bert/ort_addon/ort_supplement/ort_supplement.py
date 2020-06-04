@@ -72,13 +72,14 @@ def bert_model_description(args):
     loss_desc = IODescription('loss', [], torch.float32)
     return ModelDescription([input_ids_desc, segment_ids_desc, input_mask_desc, masked_lm_labels_desc, next_sentence_labels_desc], [loss_desc])
 
-from ort_supplement.onnx_transforms.model_transform import add_name, fix_transpose, add_expand_shape, process_concat, process_dropout
+from ort_supplement.onnx_transforms.model_transform import add_name, add_expand_shape, fix_transpose
 from ort_supplement.onnx_transforms.layer_norm_transform import layer_norm_transform
 
-def postprocess_model(model):
+def postprocess_model(model):  
+    import onnx
+    onnx.save(model, "before_transforms.onnx")
     add_name(model)
-    # not in TJ branch process_concat(model)
-    # not in TJ branch fix_transpose(model)
+    fix_transpose(model)
     add_expand_shape(model)
     layer_norm_transform(model)
 
