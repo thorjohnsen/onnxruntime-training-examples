@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-FROM nvcr.io/nvidia/pytorch:20.03-py3
+FROM sukhabertacr.azurecr.io/nvidia/pytorch:20.06-py3
 
 # Environment variables
 ENV STAGE_DIR=/root/gpu/install \
     CUDNN_DIR=/usr/local/cudnn \
-    CUDA_DIR=/usr/local/cuda-10.1 \
+    CUDA_DIR=/usr/local/cuda-11.0 \
     CUDA_HOME=/usr/local/cuda \
     CUDNN_HOME=/usr/lib/x86_64-linux-gnu \
     CUDACXX=/usr/local/cuda/bin/nvcc
@@ -99,7 +99,7 @@ RUN cp /tmp/pyt_patch/symbolic_opset10.py /opt/conda/lib/python3.6/site-packages
 # Build onnxruntime training wheel from orttraining_rc1 branch
 RUN git clone https://github.com/microsoft/onnxruntime.git &&\
     cd onnxruntime &&\
-    git checkout orttraining_rc1_perf &&\
+    git checkout sukha/orttraining_rc1_perf_cuda11 &&\
     python tools/ci_build/build.py \
         --config RelWithDebInfo \
         --use_cuda \
@@ -115,8 +115,9 @@ RUN git clone https://github.com/microsoft/onnxruntime.git &&\
         --cmake_extra_defines ONNXRUNTIME_VERSION=`cat ./VERSION_NUMBER` &&\
     pip install \
           build/RelWithDebInfo/dist/*.whl &&\
-    cd .. &&\
-    rm -rf onnxruntime /opt/cmake
+    cd ..
+
+RUN rm /opt/conda/lib/python3.6/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-36m-x86_64-linux-gnu.so
 
 RUN apt-get install -y iputils-ping
 RUN ldconfig
