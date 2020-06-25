@@ -1,7 +1,11 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-FROM sukhabertacr.azurecr.io/nvidia/pytorch:20.06-py3
+#FROM nvcr.io/nvidia/pytorch:20.03-py3
+FROM gitlab-master.nvidia.com:5005/dl/dgx/pytorch:20.06-py3-stage
+
+WORKDIR /workspace
+COPY workspace/bert/. bert
 
 # Environment variables
 ENV STAGE_DIR=/root/gpu/install \
@@ -97,11 +101,15 @@ COPY pyt_patch /tmp/pyt_patch
 RUN cp /tmp/pyt_patch/symbolic_opset10.py /opt/conda/lib/python3.6/site-packages/torch/onnx/
 
 # Build onnxruntime training wheel from orttraining_rc1 branch
-RUN git clone https://github.com/microsoft/onnxruntime.git &&\
+RUN git clone https://github.com/thorjohnsen/onnxruntime.git &&\
     cd onnxruntime &&\
-    git checkout sukha/orttraining_rc1_perf_cuda11 &&\
+    git checkout ampere_experiment &&\
+    rm onnxruntime/core/providers/cuda/math/topk_impl.h &&\
+    rm onnxruntime/core/providers/cuda/math/topk_impl.cu &&\
+    rm onnxruntime/core/providers/cuda/math/topk.cc &&\
+    ln -s /usr/local/cuda-11.0/include/cub /workspace/onnxruntime/cmake/external/cub &&\
     python tools/ci_build/build.py \
-        --config RelWithDebInfo \
+        --config Release \
         --use_cuda \
         --cuda_home /usr/local/cuda \
         --cudnn_home /usr/lib/x86_64-linux-gnu/ \
@@ -113,11 +121,15 @@ RUN git clone https://github.com/microsoft/onnxruntime.git &&\
         --build_dir build \
         --skip_tests \
         --cmake_extra_defines ONNXRUNTIME_VERSION=`cat ./VERSION_NUMBER` &&\
+    rm /opt/conda/lib/python3.6/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-36m-x86_64-linux-gnu.so &&\
     pip install \
-          build/RelWithDebInfo/dist/*.whl &&\
-    cd ..
-
-RUN rm /opt/conda/lib/python3.6/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-36m-x86_64-linux-gnu.so
+          build/Release/dist/*.whl &&\
+    cd .. &&\
+    rm -rf onnxruntime /opt/cmake
+#    git checkout sukha/orttraining_rc1_perf_cuda11 &&\
+#    git checkout ampere_experiment &&\
+#          build/RelWithDebInfo/dist/*.whl &&\
+#        --config RelWithDebInfo \
 
 RUN apt-get install -y iputils-ping
 RUN ldconfig
