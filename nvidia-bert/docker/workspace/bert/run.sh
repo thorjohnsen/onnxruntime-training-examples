@@ -18,7 +18,7 @@ python -m torch.distributed.launch --nnodes=1 --nproc_per_node=8 run_pretraining
          --num_steps_per_checkpoint 500 \
          --learning_rate 1e-3  \
          --seed 42 \
-         --gradient_accumulation_steps 16 \
+         --gradient_accumulation_steps 256 \
          --allreduce_post_accumulation \
          --allreduce_post_accumulation_fp16  \
          --do_train \
