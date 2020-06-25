@@ -5,7 +5,7 @@ TF_CKP=/workspace/phase1
 BERT_PREP_WORKING_DIR=/data/512
 bs=4096
 
-python -m torch.distributed.launch --nnodes=1 --nproc_per_node=8 run_pretraining_ort.py \
+python run_pretraining_ort.py \
          --config_file $TF_CKP/bert_config.json \
          --input_dir $BERT_PREP_WORKING_DIR \
          --output_dir /results \
