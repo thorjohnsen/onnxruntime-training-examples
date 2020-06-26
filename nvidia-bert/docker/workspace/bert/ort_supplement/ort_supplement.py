@@ -148,7 +148,7 @@ def initialize_onnx_model(model, args):
     # - training graph creation
 
     import pickle
-    batch = pickle.load( open( "sample_inputs.pkl", "rb" ) )
+    batch = [b.cuda() for b in pickle.load( open( "sample_inputs_cpu.pkl", "rb" ) )]
     input_ids, segment_ids, input_mask, masked_lm_labels, next_sentence_labels = batch
     learning_rate = torch.tensor([get_lr(args, 0, args.schedule)])
     loss_scale = torch.tensor([args.ort_loss_scale.loss_scale_])
